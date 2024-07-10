@@ -5,19 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hit the Box 2</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
         }
         #gameContainer {
             position: relative;
-            width: 800px;
-            height: 400px;
+            width: 100%;
+            height: 100%;
         }
         #startScreen, #gameOverScreen {
             position: absolute;
@@ -37,13 +45,13 @@
         }
         h1 {
             color: white;
-            font-size: 48px;
+            font-size: 5vmin;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         button {
             padding: 10px 20px;
-            font-size: 24px;
+            font-size: 2vmin;
             background-color: #00FF00;
             color: black;
             border: none;
@@ -52,6 +60,8 @@
         }
         #gameCanvas {
             background-color: #FF4136;
+            width: 100%;
+            height: 100%;
         }
         #gameInfo {
             position: absolute;
@@ -60,7 +70,7 @@
             right: 10px;
             display: flex;
             justify-content: space-between;
-            font-size: 18px;
+            font-size: 2vmin;
         }
         .infoBox {
             background-color: #f0f0f0;
@@ -86,7 +96,7 @@
             <h1>Game Over</h1>
             <button id="restartButton">Play Again</button>
         </div>
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="gameInfo">
             <div class="infoBox">Pontos <span id="score">0</span></div>
             <div class="infoBox">Fase <span id="level">1</span></div>
@@ -110,11 +120,27 @@
         let isGameRunning = false;
         let isDemo = true;
 
-        const boxWidth = 120;
-        const boxHeight = 30;
-        const ballRadius = 10;
-        const paddleHeight = 15;
-        const paddleWidth = 120;
+        let boxWidth, boxHeight, ballRadius, paddleHeight, paddleWidth;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Ajuste os tamanhos dos elementos do jogo com base no tamanho da tela
+            boxWidth = Math.min(canvas.width * 0.15, 100);
+            boxHeight = Math.min(canvas.height * 0.075, 50);
+            ballRadius = Math.min(canvas.width, canvas.height) * 0.015;
+            paddleHeight = Math.min(canvas.height * 0.0375, 20);
+            paddleWidth = Math.min(canvas.width * 0.15, 150);
+
+            // Recrie os elementos do jogo com os novos tamanhos
+            if (ball) resetBall();
+            if (paddle) paddle = new Paddle((canvas.width - paddleWidth) / 2);
+            if (boxes) createBoxes();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Chame isso inicialmente para configurar o tamanho do canvas
 
         class Ball {
             constructor(x, y, dx, dy, radius) {
@@ -148,7 +174,16 @@
                 if (this.y + this.radius > canvas.height - paddleHeight &&
                     this.x > paddle.x &&
                     this.x < paddle.x + paddleWidth) {
-                    this.dy = -this.dy;
+                    this.dy = -Math.abs(this.dy); // Garante que a bola sempre vai para cima
+                    
+                    // Adiciona um pequeno ajuste horizontal baseado na posição do impacto na raquete
+                    const paddleCenter = paddle.x + paddleWidth / 2;
+                    const impact = (this.x - paddleCenter) / (paddleWidth / 2);
+                    this.dx += impact * 2; // Ajuste a multiplicação para controlar o efeito
+                    
+                    // Limita a velocidade horizontal máxima
+                    const maxSpeed = canvas.width * 0.015;
+                    this.dx = Math.max(Math.min(this.dx, maxSpeed), -maxSpeed);
                 }
 
                 if (this.y + this.radius > canvas.height) {
@@ -190,7 +225,9 @@
             }
 
             autoMove() {
-                this.x = ball.x - this.width / 2;
+                const targetX = ball.x - this.width / 2;
+                const diff = targetX - this.x;
+                this.x += diff * 0.1; // Suaviza o movimento
                 if (this.x < 0) this.x = 0;
                 if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
             }
@@ -218,11 +255,11 @@
             let boxCount;
             
             if (isDemo) {
-                boxCount = 8; // Número fixo de caixas para o demo
+                boxCount = 8;
             } else if (isGameRunning) {
-                boxCount = level * 4; // Número de caixas baseado no nível durante o jogo
+                boxCount = level * 4;
             } else {
-                boxCount = 4; // Número inicial de caixas ao começar um novo jogo
+                boxCount = 4;
             }
             
             for (let i = 0; i < boxCount; i++) {
@@ -244,7 +281,23 @@
                     ball.x - ball.radius < box.x + box.width &&
                     ball.y + ball.radius > box.y &&
                     ball.y - ball.radius < box.y + box.height) {
-                    ball.dy = -ball.dy;
+                    
+                    // Determina de qual lado a colisão ocorreu
+                    const overlapLeft = ball.x + ball.radius - box.x;
+                    const overlapRight = box.x + box.width - (ball.x - ball.radius);
+                    const overlapTop = ball.y + ball.radius - box.y;
+                    const overlapBottom = box.y + box.height - (ball.y - ball.radius);
+
+                    // Encontra a menor sobreposição
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    // Ajusta a posição e velocidade da bola com base na colisão
+                    if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+                        ball.dx = -ball.dx;
+                    } else {
+                        ball.dy = -ball.dy;
+                    }
+
                     boxes.splice(index, 1);
                     if (isGameRunning) {
                         score++;
@@ -262,11 +315,12 @@
         }
 
         function resetBall() {
+            const speed = Math.min(canvas.width, canvas.height) * 0.005;
             ball = new Ball(
                 canvas.width / 2,
-                canvas.height - 30,
-                4 * (Math.random() > 0.5 ? 1 : -1),
-                -4,
+                canvas.height - paddleHeight - ballRadius,
+                speed * (Math.random() > 0.5 ? 1 : -1),
+                -speed,
                 ballRadius
             );
         }
@@ -331,6 +385,15 @@
                 paddle.move(mouseX);
             }
         });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (isGameRunning) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                paddle.move(touchX);
+            }
+        }, { passive: false });
 
         playButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', startGame);
