@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hit the Box 2</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 400px;
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #startScreen {
+            background-color: rgba(255, 65, 54, 0.3);
+        }
+        #gameOverScreen {
+            background-color: rgba(255, 65, 54, 0.8);
+        }
+        h1 {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 24px;
+            background-color: #00FF00;
+            color: black;
+            border: none;
+            cursor: pointer;
+            z-index: 20;
+        }
+        #gameCanvas {
+            background-color: #FF4136;
+        }
+        #gameInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+        }
+        .infoBox {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 5px 10px;
+        }
+        .infoBox span {
+            background-color: #FF851B;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="startScreen">
+            <h1>Hit the Box 2</h1>
+            <button id="playButton">Play</button>
+        </div>
+        <div id="gameOverScreen" style="display: none;">
+            <h1>Game Over</h1>
+            <button id="restartButton">Play Again</button>
+        </div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="gameInfo">
+            <div class="infoBox">Pontos <span id="score">0</span></div>
+            <div class="infoBox">Fase <span id="level">1</span></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const playButton = document.getElementById('playButton');
+        const restartButton = document.getElementById('restartButton');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+
+        let ball, paddle, boxes;
+        let score = 0;
+        let level = 1;
+        let animationId;
+        let isGameRunning = false;
+        let isDemo = true;
+
+        const boxWidth = 120;
+        const boxHeight = 30;
+        const ballRadius = 10;
+        const paddleHeight = 15;
+        const paddleWidth = 120;
+
+        class Ball {
+            constructor(x, y, dx, dy, radius) {
+                this.x = x;
+                this.y = y;
+                this.dx = dx;
+                this.dy = dy;
+                this.radius = radius;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'black';
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            move() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                    this.dx = -this.dx;
+                }
+
+                if (this.y - this.radius < 0) {
+                    this.dy = -this.dy;
+                }
+
+                if (this.y + this.radius > canvas.height - paddleHeight &&
+                    this.x > paddle.x &&
+                    this.x < paddle.x + paddleWidth) {
+                    this.dy = -this.dy;
+                }
+
+                if (this.y + this.radius > canvas.height) {
+                    if (isGameRunning) {
+                        gameOver();
+                    } else {
+                        this.dy = -this.dy;
+                    }
+                }
+            }
+        }
+
+        class Paddle {
+            constructor(x) {
+                this.x = x;
+                this.y = canvas.height - paddleHeight;
+                this.width = paddleWidth;
+                this.height = paddleHeight;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.height / 2, this.y);
+                ctx.lineTo(this.x + this.width - this.height / 2, this.y);
+                ctx.arcTo(this.x + this.width, this.y, this.x + this.width, this.y + this.height / 2, this.height / 2);
+                ctx.arcTo(this.x + this.width, this.y + this.height, this.x + this.width - this.height / 2, this.y + this.height, this.height / 2);
+                ctx.lineTo(this.x + this.height / 2, this.y + this.height);
+                ctx.arcTo(this.x, this.y + this.height, this.x, this.y + this.height / 2, this.height / 2);
+                ctx.arcTo(this.x, this.y, this.x + this.height / 2, this.y, this.height / 2);
+                ctx.closePath();
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            }
+
+            move(mouseX) {
+                this.x = mouseX - this.width / 2;
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+            }
+
+            autoMove() {
+                this.x = ball.x - this.width / 2;
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+            }
+        }
+
+        class Box {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = boxWidth;
+                this.height = boxHeight;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.rect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#00FF00';
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function createBoxes() {
+            boxes = [];
+            let boxCount;
+            
+            if (isDemo) {
+                boxCount = 8; // Número fixo de caixas para o demo
+            } else if (isGameRunning) {
+                boxCount = level * 4; // Número de caixas baseado no nível durante o jogo
+            } else {
+                boxCount = 4; // Número inicial de caixas ao começar um novo jogo
+            }
+            
+            for (let i = 0; i < boxCount; i++) {
+                let x, y;
+                do {
+                    x = Math.random() * (canvas.width - boxWidth);
+                    y = Math.random() * (canvas.height / 2);
+                } while (boxes.some(box => 
+                    Math.abs(box.x - x) < boxWidth && 
+                    Math.abs(box.y - y) < boxHeight
+                ));
+                boxes.push(new Box(x, y));
+            }
+        }
+
+        function checkCollision() {
+            boxes.forEach((box, index) => {
+                if (ball.x + ball.radius > box.x &&
+                    ball.x - ball.radius < box.x + box.width &&
+                    ball.y + ball.radius > box.y &&
+                    ball.y - ball.radius < box.y + box.height) {
+                    ball.dy = -ball.dy;
+                    boxes.splice(index, 1);
+                    if (isGameRunning) {
+                        score++;
+                        scoreElement.textContent = score;
+
+                        if (boxes.length === 0) {
+                            level++;
+                            levelElement.textContent = level;
+                            createBoxes();
+                            resetBall();
+                        }
+                    }
+                }
+            });
+        }
+
+        function resetBall() {
+            ball = new Ball(
+                canvas.width / 2,
+                canvas.height - 30,
+                4 * (Math.random() > 0.5 ? 1 : -1),
+                -4,
+                ballRadius
+            );
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ball.draw();
+            ball.move();
+            paddle.draw();
+            boxes.forEach(box => box.draw());
+
+            checkCollision();
+
+            if (isDemo) {
+                paddle.autoMove();
+            }
+
+            animationId = requestAnimationFrame(update);
+        }
+
+        function startGame() {
+            cancelAnimationFrame(animationId);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            resetBall();
+            paddle = new Paddle((canvas.width - paddleWidth) / 2);
+            score = 0;
+            level = 1;
+            scoreElement.textContent = score;
+            levelElement.textContent = level;
+
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            isGameRunning = true;
+            isDemo = false;
+            
+            createBoxes();
+            
+            update();
+        }
+
+        function gameOver() {
+            cancelAnimationFrame(animationId);
+            isGameRunning = false;
+            isDemo = false;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function startDemo() {
+            resetBall();
+            paddle = new Paddle((canvas.width - paddleWidth) / 2);
+            isGameRunning = false;
+            isDemo = true;
+            createBoxes();
+            update();
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isGameRunning) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                paddle.move(mouseX);
+            }
+        });
+
+        playButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+
+        // Iniciar o demo
+        startDemo();
+    </script>
+</body>
+</html>
