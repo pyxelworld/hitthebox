@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hit the Box - made by Magic Plus</title>
+    <title>Hit the Box</title>
     <style>
         * {
             margin: 0;
@@ -77,6 +77,7 @@
             border-radius: 5px;
             padding: 5px 10px;
             margin-right: 10px;
+            display: inline-block;
         }
         .infoBox span {
             background-color: #FF851B;
@@ -86,23 +87,26 @@
             margin-left: 5px;
         }
         #pauseButton {
-            background-color: #FF851B;
-            color: white;
+            background-color: #f0f0f0;
+            color: black;
             border: none;
             padding: 5px 10px;
             border-radius: 5px;
             cursor: pointer;
+        }
+        #pauseButton:hover {
+            background-color: #e0e0e0;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <div id="startScreen">
-            <h1>Hit the Box 2</h1>
+            <h1>Hit the Box</h1>
             <button id="playButton">Play</button>
         </div>
         <div id="gameOverScreen" style="display: none;">
-            <h1>Game Over 😂</h1>
+            <h1>Game Over</h1>
             <p style="color: white; margin-bottom: 10px;">Recorde: <span id="highScore">0</span></p>
             <button id="restartButton">Play Again</button>
         </div>
@@ -114,10 +118,9 @@
         <div id="gameInfo">
             <div>
                 <div class="infoBox">Pontos <span id="score">0</span></div>
-                <div class="infoBox">Fase <span id="level">1</span></div>
-                <div class="infoBox">Recorde <span id="currentHighScore">0</span></div>
+                <div class="infoBox" id="pauseButton">Pause</div>
             </div>
-            <button id="pauseButton">Pause</button>
+            <div class="infoBox">Fase <span id="level">1</span></div>
         </div>
     </div>
 
@@ -134,7 +137,6 @@
         const scoreElement = document.getElementById('score');
         const levelElement = document.getElementById('level');
         const highScoreElement = document.getElementById('highScore');
-        const currentHighScoreElement = document.getElementById('currentHighScore');
 
         let ball, paddle, boxes;
         let score = 0;
@@ -409,7 +411,6 @@
                 highScore = score;
                 localStorage.setItem('highScore', highScore);
             }
-            currentHighScoreElement.textContent = highScore;
         }
 
         function togglePause() {
@@ -438,8 +439,7 @@
             }
         }, { passive: false });
 
-        playButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', startGame);
+        playButton.addEventListener('click', startGame);restartButton.addEventListener('click', startGame);
         resumeButton.addEventListener('click', togglePause);
         pauseButton.addEventListener('click', togglePause);
 
