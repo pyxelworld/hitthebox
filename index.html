@@ -27,7 +27,7 @@
             width: 100%;
             height: 100%;
         }
-        #startScreen, #gameOverScreen {
+        #startScreen, #gameOverScreen, #pauseScreen {
             position: absolute;
             width: 100%;
             height: 100%;
@@ -40,7 +40,7 @@
         #startScreen {
             background-color: rgba(255, 65, 54, 0.3);
         }
-        #gameOverScreen {
+        #gameOverScreen, #pauseScreen {
             background-color: rgba(255, 65, 54, 0.8);
         }
         h1 {
@@ -76,6 +76,7 @@
             background-color: #f0f0f0;
             border-radius: 5px;
             padding: 5px 10px;
+            margin-right: 10px;
         }
         .infoBox span {
             background-color: #FF851B;
@@ -83,6 +84,14 @@
             padding: 2px 5px;
             border-radius: 3px;
             margin-left: 5px;
+        }
+        #pauseButton {
+            background-color: #FF851B;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -94,12 +103,21 @@
         </div>
         <div id="gameOverScreen" style="display: none;">
             <h1>Game Over 😂</h1>
+            <p style="color: white; margin-bottom: 10px;">Recorde: <span id="highScore">0</span></p>
             <button id="restartButton">Play Again</button>
+        </div>
+        <div id="pauseScreen" style="display: none;">
+            <h1>Paused</h1>
+            <button id="resumeButton">Resume</button>
         </div>
         <canvas id="gameCanvas"></canvas>
         <div id="gameInfo">
-            <div class="infoBox">Pontos <span id="score">0</span></div>
-            <div class="infoBox">Fase <span id="level">1</span></div>
+            <div>
+                <div class="infoBox">Pontos <span id="score">0</span></div>
+                <div class="infoBox">Fase <span id="level">1</span></div>
+                <div class="infoBox">Recorde <span id="currentHighScore">0</span></div>
+            </div>
+            <button id="pauseButton">Pause</button>
         </div>
     </div>
 
@@ -108,10 +126,15 @@
         const ctx = canvas.getContext('2d');
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
         const playButton = document.getElementById('playButton');
         const restartButton = document.getElementById('restartButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const pauseButton = document.getElementById('pauseButton');
         const scoreElement = document.getElementById('score');
         const levelElement = document.getElementById('level');
+        const highScoreElement = document.getElementById('highScore');
+        const currentHighScoreElement = document.getElementById('currentHighScore');
 
         let ball, paddle, boxes;
         let score = 0;
@@ -119,6 +142,8 @@
         let animationId;
         let isGameRunning = false;
         let isDemo = true;
+        let isPaused = false;
+        let highScore = localStorage.getItem('highScore') || 0;
 
         let boxWidth, boxHeight, ballRadius, paddleHeight, paddleWidth;
 
@@ -126,21 +151,19 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            // Ajuste os tamanhos dos elementos do jogo com base no tamanho da tela
             boxWidth = Math.min(canvas.width * 0.15, 100);
             boxHeight = Math.min(canvas.height * 0.075, 50);
             ballRadius = Math.min(canvas.width, canvas.height) * 0.015;
             paddleHeight = Math.min(canvas.height * 0.0375, 20);
             paddleWidth = Math.min(canvas.width * 0.15, 150);
 
-            // Recrie os elementos do jogo com os novos tamanhos
             if (ball) resetBall();
             if (paddle) paddle = new Paddle((canvas.width - paddleWidth) / 2);
             if (boxes) createBoxes();
         }
 
         window.addEventListener('resize', resizeCanvas);
-        resizeCanvas(); // Chame isso inicialmente para configurar o tamanho do canvas
+        resizeCanvas();
 
         class Ball {
             constructor(x, y, dx, dy, radius) {
@@ -174,15 +197,13 @@
                 if (this.y + this.radius > canvas.height - paddleHeight &&
                     this.x > paddle.x &&
                     this.x < paddle.x + paddleWidth) {
-                    this.dy = -Math.abs(this.dy); // Garante que a bola sempre vai para cima
+                    this.dy = -Math.abs(this.dy);
                     
-                    // Adiciona um pequeno ajuste horizontal baseado na posição do impacto na raquete
                     const paddleCenter = paddle.x + paddleWidth / 2;
                     const impact = (this.x - paddleCenter) / (paddleWidth / 2);
-                    this.dx += impact * 2; // Ajuste a multiplicação para controlar o efeito
+                    this.dx += impact * 2;
                     
-                    // Limita a velocidade horizontal máxima
-                    const maxSpeed = canvas.width * 0.015;
+                    const maxSpeed = canvas.width * 0.02;
                     this.dx = Math.max(Math.min(this.dx, maxSpeed), -maxSpeed);
                 }
 
@@ -227,7 +248,7 @@
             autoMove() {
                 const targetX = ball.x - this.width / 2;
                 const diff = targetX - this.x;
-                this.x += diff * 0.1; // Suaviza o movimento
+                this.x += diff * 0.1;
                 if (this.x < 0) this.x = 0;
                 if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
             }
@@ -282,16 +303,13 @@
                     ball.y + ball.radius > box.y &&
                     ball.y - ball.radius < box.y + box.height) {
                     
-                    // Determina de qual lado a colisão ocorreu
                     const overlapLeft = ball.x + ball.radius - box.x;
                     const overlapRight = box.x + box.width - (ball.x - ball.radius);
                     const overlapTop = ball.y + ball.radius - box.y;
                     const overlapBottom = box.y + box.height - (ball.y - ball.radius);
 
-                    // Encontra a menor sobreposição
                     const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
 
-                    // Ajusta a posição e velocidade da bola com base na colisão
                     if (minOverlap === overlapLeft || minOverlap === overlapRight) {
                         ball.dx = -ball.dx;
                     } else {
@@ -302,6 +320,7 @@
                     if (isGameRunning) {
                         score++;
                         scoreElement.textContent = score;
+                        updateHighScore();
 
                         if (boxes.length === 0) {
                             level++;
@@ -315,7 +334,7 @@
         }
 
         function resetBall() {
-            const speed = Math.min(canvas.width, canvas.height) * 0.005;
+            const speed = Math.min(canvas.width, canvas.height) * 0.007;
             ball = new Ball(
                 canvas.width / 2,
                 canvas.height - paddleHeight - ballRadius,
@@ -326,17 +345,19 @@
         }
 
         function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!isPaused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ball.draw();
-            ball.move();
-            paddle.draw();
-            boxes.forEach(box => box.draw());
+                ball.draw();
+                ball.move();
+                paddle.draw();
+                boxes.forEach(box => box.draw());
 
-            checkCollision();
+                checkCollision();
 
-            if (isDemo) {
-                paddle.autoMove();
+                if (isDemo) {
+                    paddle.autoMove();
+                }
             }
 
             animationId = requestAnimationFrame(update);
@@ -351,11 +372,14 @@
             level = 1;
             scoreElement.textContent = score;
             levelElement.textContent = level;
+            updateHighScore();
 
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
             isGameRunning = true;
             isDemo = false;
+            isPaused = false;
             
             createBoxes();
             
@@ -366,6 +390,8 @@
             cancelAnimationFrame(animationId);
             isGameRunning = false;
             isDemo = false;
+            updateHighScore();
+            highScoreElement.textContent = highScore;
             gameOverScreen.style.display = 'flex';
         }
 
@@ -378,8 +404,25 @@
             update();
         }
 
+        function updateHighScore() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+            }
+            currentHighScoreElement.textContent = highScore;
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseScreen.style.display = 'flex';
+            } else {
+                pauseScreen.style.display = 'none';
+            }
+        }
+
         canvas.addEventListener('mousemove', (e) => {
-            if (isGameRunning) {
+            if (isGameRunning && !isPaused) {
                 const rect = canvas.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 paddle.move(mouseX);
@@ -387,7 +430,7 @@
         });
 
         canvas.addEventListener('touchmove', (e) => {
-            if (isGameRunning) {
+            if (isGameRunning && !isPaused) {
                 e.preventDefault();
                 const rect = canvas.getBoundingClientRect();
                 const touchX = e.touches[0].clientX - rect.left;
@@ -396,9 +439,21 @@
         }, { passive: false });
 
         playButton.addEventListener('click', startGame);
-        restartButton.addEventListener('click', startGame);
+restartButton.addEventListener('click', startGame);
+        resumeButton.addEventListener('click', togglePause);
+        pauseButton.addEventListener('click', togglePause);
 
-        // Iniciar o demo
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (isGameRunning) {
+                    togglePause();
+                } else if (!isDemo) {
+                    startGame();
+                }
+            }
+        });
+
+        updateHighScore();
         startDemo();
     </script>
 </body>
