@@ -335,9 +335,9 @@
             });
         }
 
-        function resetBall() {
+        function resetBall(newGame = false) {
     const speed = Math.min(canvas.width, canvas.height) * 0.007;
-    if (!ball) {
+    if (newGame || !ball) {
         ball = new Ball(
             canvas.width / 2,
             canvas.height - paddleHeight - ballRadius,
@@ -368,27 +368,27 @@
         }
 
         function startGame() {
-            cancelAnimationFrame(animationId);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            resetBall();
-            paddle = new Paddle((canvas.width - paddleWidth) / 2);
-            score = 0;
-            level = 1;
-            scoreElement.textContent = score;
-            levelElement.textContent = level;
-            updateHighScore();
+    cancelAnimationFrame(animationId);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    resetBall(true);
+    paddle = new Paddle((canvas.width - paddleWidth) / 2);
+    score = 0;
+    level = 1;
+    scoreElement.textContent = score;
+    levelElement.textContent = level;
+    updateHighScore();
 
-            startScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
-            pauseScreen.style.display = 'none';
-            isGameRunning = true;
-            isDemo = false;
-            isPaused = false;
-            
-            createBoxes();
-            
-            update();
-        }
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    pauseScreen.style.display = 'none';
+    isGameRunning = true;
+    isDemo = false;
+    isPaused = false;
+    
+    createBoxes();
+    
+    update();
+}
 
         function gameOver() {
             cancelAnimationFrame(animationId);
