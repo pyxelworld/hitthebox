@@ -3,7 +3,7 @@
 
 ## Descrição
 
-Hit the Box 2 é um jogo simples e viciante feito inteiramente com o Magic Plus. O objetivo é destruir todas as caixas com a bolinha preta sem deixá-la cair. Para evitar que a bolinha caia, você precisa usar uma barrinha branca em baixo da tela.
+Hit the Box 2 é um jogo simples e viciante feito inteiramente com a IA Magic Plus da Pyxel. O objetivo é destruir todas as caixas com a bolinha preta sem deixá-la cair. Para evitar que a bolinha caia, você precisa usar uma barrinha branca em baixo da tela.
 
 ## Como Jogar
 
@@ -22,8 +22,11 @@ Hit the Box 2 é um jogo simples e viciante feito inteiramente com o Magic Plus.
 * Sistema de recorde de pontos
 * Diversão garantida, sozinho ou com amigos!
 
-## Link do Jogo
+## Links
 
 [https://hitthebox.pyxelworld.com/](https://hitthebox.pyxelworld.com/)
 
 Observação: Página README feita inteiramente com o Magic.
+Magic: [https://poe.com/PyxelMagic/](https://poe.com/PyxelMagic/)
+Magic Plus: [https://poe.com/Magic Plus/](https://poe.com/MagicPlus/)
+Pyxel World: [https://pyxelworld.com//](https://pyxelwold.com/)
