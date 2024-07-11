@@ -29,4 +29,4 @@ Hit the Box 2 é um jogo simples e viciante feito inteiramente com a IA Magic Pl
 Observação: Página README feita inteiramente com o Magic.
 * Magic: [https://poe.com/PyxelMagic/](https://poe.com/PyxelMagic/)
 * Magic Plus: [https://poe.com/Magic Plus/](https://poe.com/MagicPlus/)
-* Pyxel World: [https://pyxelworld.com//](https://pyxelwold.com/)
+* Pyxel World: [https://pyxelworld.com/](https://pyxelwold.com/)
