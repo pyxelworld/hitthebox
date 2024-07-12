@@ -335,11 +335,12 @@
             });
         }
 
-        function resetBall() {
+        function resetBall(newGame = false) {
             const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
             const speedIncrease = Math.min(canvas.width, canvas.height) * 0.0005; // Aumento de velocidade por nível
             const speed = baseSpeed + (level - 1) * speedIncrease;
             
+            if (newGame || !ball) {
             ball = new Ball(
                 canvas.width / 2,
                 canvas.height - paddleHeight - ballRadius,
@@ -348,6 +349,7 @@
                 ballRadius
             );
         }
+    }
 
         function update() {
             if (!isPaused) {
