@@ -123,7 +123,6 @@
             <div class="infoBox">Fase <span id="level">1</span></div>
         </div>
     </div>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -159,7 +158,11 @@
             paddleHeight = Math.min(canvas.height * 0.0375, 20);
             paddleWidth = Math.min(canvas.width * 0.15, 150);
 
-            if (ball) resetBall();
+            if (ball) {
+                ball.radius = ballRadius;
+                ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
+                ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
+            }
             if (paddle) paddle = new Paddle((canvas.width - paddleWidth) / 2);
             if (boxes) createBoxes();
         }
@@ -216,6 +219,18 @@
                         this.dy = -this.dy;
                     }
                 }
+            }
+
+            updateSpeed() {
+                const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
+                const speedIncrease = Math.min(canvas.width, canvas.height) * 0.0005;
+                const speed = baseSpeed + (level - 1) * speedIncrease;
+                
+                const currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+                const factor = speed / currentSpeed;
+                
+                this.dx *= factor;
+                this.dy *= factor;
             }
         }
 
@@ -328,19 +343,17 @@
                             level++;
                             levelElement.textContent = level;
                             createBoxes();
-                            resetBall();
+                            ball.updateSpeed();
                         }
                     }
                 }
             });
         }
 
-        function resetBall(newGame = false) {
+        function resetBall() {
             const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
-            const speedIncrease = Math.min(canvas.width, canvas.height) * 0.0005; // Aumento de velocidade por nível
-            const speed = baseSpeed + (level - 1) * speedIncrease;
+            const speed = baseSpeed;
             
-            if (newGame || !ball) {
             ball = new Ball(
                 canvas.width / 2,
                 canvas.height - paddleHeight - ballRadius,
@@ -349,7 +362,6 @@
                 ballRadius
             );
         }
-    }
 
         function update() {
             if (!isPaused) {
@@ -415,7 +427,7 @@
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('highScore', highScore);
-            }
+                }
         }
 
         function togglePause() {
