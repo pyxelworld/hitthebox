@@ -108,7 +108,7 @@
         <div id="gameOverScreen" style="display: none;">
             <h1>Você perdeu 😂</h1>
             <p style="color: white; margin-bottom: 10px;">Recorde: <span id="highScore">0</span></p>
-            <button id="restartButton">Jogar Novamente</button>
+            <button id="restartButton">Jogar novamente</button>
         </div>
         <div id="pauseScreen" style="display: none;">
             <h1>Pausado</h1>
@@ -123,6 +123,7 @@
             <div class="infoBox">Fase <span id="level">1</span></div>
         </div>
     </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -148,15 +149,25 @@
 
         let boxWidth, boxHeight, ballRadius, paddleHeight, paddleWidth;
 
+        const isMobile = /Android|iPhone|iPod/i.test(navigator.userAgent);
+
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            boxWidth = Math.min(canvas.width * 0.15, 100);
-            boxHeight = Math.min(canvas.height * 0.075, 50);
-            ballRadius = Math.min(canvas.width, canvas.height) * 0.015;
-            paddleHeight = Math.min(canvas.height * 0.0375, 20);
-            paddleWidth = Math.min(canvas.width * 0.15, 150);
+            if (isMobile) {
+                boxWidth = Math.min(canvas.width * 0.2, 80);
+                boxHeight = Math.min(canvas.height * 0.05, 40);
+                ballRadius = Math.min(canvas.width, canvas.height) * 0.02;
+                paddleHeight = Math.min(canvas.height * 0.03, 15);
+                paddleWidth = Math.min(canvas.width * 0.25, 120);
+            } else {
+                boxWidth = Math.min(canvas.width * 0.15, 100);
+                boxHeight = Math.min(canvas.height * 0.075, 50);
+                ballRadius = Math.min(canvas.width, canvas.height) * 0.015;
+                paddleHeight = Math.min(canvas.height * 0.0375, 20);
+                paddleWidth = Math.min(canvas.width * 0.15, 150);
+            }
 
             if (ball) {
                 ball.radius = ballRadius;
@@ -223,7 +234,7 @@
 
             updateSpeed() {
                 const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
-                const speedIncrease = Math.min(canvas.width, canvas.height) * 0.0005;
+                const speedIncrease = Math.min(canvas.width, canvas.height) * 0.001; // Aumentado para 0.1%
                 const speed = baseSpeed + (level - 1) * speedIncrease;
                 
                 const currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
@@ -398,28 +409,30 @@
             pauseScreen.style.display = 'none';
             isGameRunning = true;
             isDemo = false;
+            pauseScreen.style.display = 'none';
+            isGameRunning = true;
+            isDemo = false;
             isPaused = false;
-            
+
             createBoxes();
-            
             update();
         }
 
         function gameOver() {
-            cancelAnimationFrame(animationId);
             isGameRunning = false;
-            isDemo = false;
-            updateHighScore();
-            highScoreElement.textContent = highScore;
             gameOverScreen.style.display = 'flex';
+            cancelAnimationFrame(animationId);
+            updateHighScore();
         }
 
         function startDemo() {
+            cancelAnimationFrame(animationId);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             resetBall();
             paddle = new Paddle((canvas.width - paddleWidth) / 2);
-            isGameRunning = false;
-            isDemo = true;
             createBoxes();
+            isDemo = true;
+            isPaused = false;
             update();
         }
 
@@ -427,7 +440,8 @@
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('highScore', highScore);
-                }
+            }
+            highScoreElement.textContent = highScore;
         }
 
         function togglePause() {
