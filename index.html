@@ -149,7 +149,7 @@
 
         let boxWidth, boxHeight, ballRadius, paddleHeight, paddleWidth;
 
-        const isMobile = /Android|iPhone|iPod/i.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -159,8 +159,8 @@
                 boxWidth = Math.min(canvas.width * 0.2, 80);
                 boxHeight = Math.min(canvas.height * 0.05, 40);
                 ballRadius = Math.min(canvas.width, canvas.height) * 0.02;
-                paddleHeight = Math.min(canvas.height * 0.03, 15);
-                paddleWidth = Math.min(canvas.width * 0.25, 120);
+                paddleHeight = Math.min(canvas.height * 0.02, 10); // Reduzido o tamanho da barra
+                paddleWidth = Math.min(canvas.width * 0.2, 100); // Reduzido o tamanho da barra
             } else {
                 boxWidth = Math.min(canvas.width * 0.15, 100);
                 boxHeight = Math.min(canvas.height * 0.075, 50);
@@ -233,8 +233,8 @@
             }
 
             updateSpeed() {
-                const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
-                const speedIncrease = Math.min(canvas.width, canvas.height) * 0.001; // Aumentado para 0.1%
+                const baseSpeed = Math.min(canvas.width, canvas.height) * (isMobile ? 0.014 : 0.007); // Dobro da velocidade para mobile
+                const speedIncrease = Math.min(canvas.width, canvas.height) * 0.01; // Aumentado para 1%
                 const speed = baseSpeed + (level - 1) * speedIncrease;
                 
                 const currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
@@ -362,7 +362,7 @@
         }
 
         function resetBall() {
-            const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
+            const baseSpeed = Math.min(canvas.width, canvas.height) * (isMobile ? 0.014 : 0.007); // Dobro da velocidade para mobile
             const speed = baseSpeed;
             
             ball = new Ball(
@@ -400,7 +400,7 @@
             paddle = new Paddle((canvas.width - paddleWidth) / 2);
             score = 0;
             level = 1;
-            scoreElement.textContent = score;
+            scoreElement.textContent = score; 
             levelElement.textContent = level;
             updateHighScore();
 
