@@ -108,7 +108,7 @@
         <div id="gameOverScreen" style="display: none;">
             <h1>Você perdeu 😂</h1>
             <p style="color: white; margin-bottom: 10px;">Recorde: <span id="highScore">0</span></p>
-            <button id="restartButton">Jogar novamente</button>
+            <button id="restartButton">Jogar Novamente</button>
         </div>
         <div id="pauseScreen" style="display: none;">
             <h1>Pausado</h1>
@@ -118,7 +118,7 @@
         <div id="gameInfo">
             <div>
                 <div class="infoBox">Pontos <span id="score">0</span></div>
-                <div class="infoBox" id="pauseButton">Pausar</div>
+                <div class="infoBox" id="pauseButton">Pause</div>
             </div>
             <div class="infoBox">Fase <span id="level">1</span></div>
         </div>
@@ -335,19 +335,20 @@
             });
         }
 
-        function resetBall(newGame = false) {
-    const speed = Math.min(canvas.width, canvas.height) * 0.007;
-    if (newGame || !ball) {
-        ball = new Ball(
-            canvas.width / 2,
-            canvas.height - paddleHeight - ballRadius,
-            speed * (Math.random() > 0.5 ? 1 : -1),
-            -speed,
-            ballRadius
-        );
-    }
-}
-        
+        function resetBall() {
+            const baseSpeed = Math.min(canvas.width, canvas.height) * 0.007;
+            const speedIncrease = Math.min(canvas.width, canvas.height) * 0.0005; // Aumento de velocidade por nível
+            const speed = baseSpeed + (level - 1) * speedIncrease;
+            
+            ball = new Ball(
+                canvas.width / 2,
+                canvas.height - paddleHeight - ballRadius,
+                speed * (Math.random() > 0.5 ? 1 : -1),
+                -speed,
+                ballRadius
+            );
+        }
+
         function update() {
             if (!isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -368,27 +369,27 @@
         }
 
         function startGame() {
-    cancelAnimationFrame(animationId);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    resetBall(true);
-    paddle = new Paddle((canvas.width - paddleWidth) / 2);
-    score = 0;
-    level = 1;
-    scoreElement.textContent = score;
-    levelElement.textContent = level;
-    updateHighScore();
+            cancelAnimationFrame(animationId);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            resetBall();
+            paddle = new Paddle((canvas.width - paddleWidth) / 2);
+            score = 0;
+            level = 1;
+            scoreElement.textContent = score;
+            levelElement.textContent = level;
+            updateHighScore();
 
-    startScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
-    pauseScreen.style.display = 'none';
-    isGameRunning = true;
-    isDemo = false;
-    isPaused = false;
-    
-    createBoxes();
-    
-    update();
-}
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
+            isGameRunning = true;
+            isDemo = false;
+            isPaused = false;
+            
+            createBoxes();
+            
+            update();
+        }
 
         function gameOver() {
             cancelAnimationFrame(animationId);
@@ -441,7 +442,8 @@
             }
         }, { passive: false });
 
-        playButton.addEventListener('click', startGame);restartButton.addEventListener('click', startGame);
+        playButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
         resumeButton.addEventListener('click', togglePause);
         pauseButton.addEventListener('click', togglePause);
 
