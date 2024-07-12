@@ -262,6 +262,11 @@
                 this.y = y;
                 this.width = boxWidth;
                 this.height = boxHeight;
+
+                isVisible() {
+    return this.x < canvas.width && this.x + this.width > 0 &&
+           this.y < canvas.height && this.y + this.height > 0;
+}
             }
 
             draw() {
@@ -298,42 +303,20 @@
             }
         }
 
-        function checkCollision() {
-            boxes.forEach((box, index) => {
-                if (ball.x + ball.radius > box.x &&
-                    ball.x - ball.radius < box.x + box.width &&
-                    ball.y + ball.radius > box.y &&
-                    ball.y - ball.radius < box.y + box.height) {
-                    
-                    const overlapLeft = ball.x + ball.radius - box.x;
-                    const overlapRight = box.x + box.width - (ball.x - ball.radius);
-                    const overlapTop = ball.y + ball.radius - box.y;
-                    const overlapBottom = box.y + box.height - (ball.y - ball.radius);
+        function checkCollision(ball, box) {
+    const distX = Math.abs(ball.x - box.x - box.width / 2);
+    const distY = Math.abs(ball.y - box.y - box.height / 2);
 
-                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+    if (distX > (box.width / 2 + ball.radius)) return false;
+    if (distY > (box.height / 2 + ball.radius)) return false;
 
-                    if (minOverlap === overlapLeft || minOverlap === overlapRight) {
-                        ball.dx = -ball.dx;
-                    } else {
-                        ball.dy = -ball.dy;
-                    }
+    if (distX <= (box.width / 2)) return true;
+    if (distY <= (box.height / 2)) return true;
 
-                    boxes.splice(index, 1);
-                    if (isGameRunning) {
-                        score++;
-                        scoreElement.textContent = score;
-                        updateHighScore();
-
-                        if (boxes.length === 0) {
-                            level++;
-                            levelElement.textContent = level;
-                            createBoxes();
-                            resetBall();
-                        }
-                    }
-                }
-            });
-        }
+    const dx = distX - box.width / 2;
+    const dy = distY - box.height / 2;
+    return (dx * dx + dy * dy <= (ball.radius * ball.radius));
+}
 
         function resetBall(newGame = false) {
     const speed = Math.min(canvas.width, canvas.height) * 0.007;
@@ -349,23 +332,72 @@
 }
         
         function update() {
-            if (!isPaused) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!isPaused && isGameRunning) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                ball.draw();
-                ball.move();
-                paddle.draw();
-                boxes.forEach(box => box.draw());
+        ball.update();
 
-                checkCollision();
+        // Verificação de colisão com as caixas
+        for (let i = boxes.length - 1; i >= 0; i--) {
+            if (checkCollision(ball, boxes[i])) {
+                ball.dy = -ball.dy;
+                boxes.splice(i, 1);
+                score++;
+                scoreElement.textContent = score;
 
-                if (isDemo) {
-                    paddle.autoMove();
+                if (boxes.length === 0) {
+                    level++;
+                    levelElement.textContent = level;
+                    boxCount = Math.min(80, boxCount + 5);
+                    createBoxes();
+                    resetBall();
+                    paddleWidth = Math.max(60, paddleWidth - 2);
                 }
             }
+        }
+
+        // Renderização dos objetos do jogo
+        boxes.forEach(box => {
+            if (box.isVisible()) {
+                box.draw();
+            }
+        });
+
+        if (ball.isVisible()) {
+            ball.draw();
+        }
+
+        paddle.draw();
+
+        // Movimento automático do paddle no modo demo
+        if (isDemo) {
+            if (ball.x > paddle.x + paddleWidth / 2) {
+                paddle.moveRight();
+            } else if (ball.x < paddle.x + paddleWidth / 2) {
+                paddle.moveLeft();
+            }
+        }
+    }
+
+    requestAnimationFrame(limitFPS(update));
+}
 
             animationId = requestAnimationFrame(update);
         }
+
+        boxes.forEach(box => {
+            if (box.isVisible()) {
+                box.draw();
+            }
+        });
+
+        if (ball.isVisible()) {
+            ball.draw();
+        }
+
+        paddle.draw();
+    }
+}
 
         function startGame() {
     cancelAnimationFrame(animationId);
@@ -455,6 +487,24 @@
             }
         });
 
+let lastTime = 0;
+const fps = 60;
+const interval = 1000 / fps;
+
+function limitFPS(callback) {
+    return (timestamp) => {
+        if (!lastTime) lastTime = timestamp;
+        const delta = timestamp - lastTime;
+
+        if (delta > interval) {
+            lastTime = timestamp - (delta % interval);
+            callback();
+        }
+
+        requestAnimationFrame(limitFPS(callback));
+    };
+}
+        
         updateHighScore();
         startDemo();
     </script>
